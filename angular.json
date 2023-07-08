@@ -5,7 +5,11 @@
   "projects": {
     "undo-programming": {
       "projectType": "application",
-      "schematics": {},
+      "schematics": {
+        "@schematics/angular:application": {
+          "strict": true
+        }
+      },
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
@@ -13,6 +17,9 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "allowedCommonJsDependencies": [
+              "codemirror"
+            ],
             "outputPath": "dist/undo-programming",
             "index": "src/index.html",
             "main": "src/main.ts",

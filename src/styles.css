@@ -1,1 +1,18 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://unpkg.com/firacode@1.205.0/distr/fira_code.css');
+
+.cm-content,
+.cm-gutter {
+    min-height: 90vh;
+}
+
+.cm-gutters {
+    margin: 1px;
+}
+
+.cm-scroller {
+    overflow: auto;
+}
+
+.cm-editor {
+    border: 1px solid silver
+}
