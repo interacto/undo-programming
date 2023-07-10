@@ -16,3 +16,9 @@
 .cm-editor {
     border: 1px solid silver
 }
+
+/* temp workaround for the history */
+.tree {
+    width: 100% o !important;
+    position: relative !important;
+}
