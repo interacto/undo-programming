@@ -5,8 +5,11 @@ import { javascript } from '@codemirror/lang-javascript';
 import { bracketMatching, defaultHighlightStyle, foldGutter, foldKeymap, indentOnInput, syntaxHighlighting, syntaxTree } from '@codemirror/language';
 import { Diagnostic, lintGutter, lintKeymap, linter } from '@codemirror/lint';
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
-import { EditorState, Extension, StateField } from '@codemirror/state';
+import { ChangeSet, EditorState, Extension, StateField, Transaction } from '@codemirror/state';
 import { EditorView, ViewUpdate, crosshairCursor, drawSelection, dropCursor, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, keymap, lineNumbers, rectangularSelection } from '@codemirror/view';
+import { TreeUndoHistory, UndoHistory } from 'interacto';
+import { CodeChanged } from './commands/code-changed';
+import { interactoTreeUndoProviders } from 'interacto-angular';
 
 const theme = EditorView.theme(
   {
@@ -39,26 +42,29 @@ const themeExt: Extension = [
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  styleUrls: ['./app.component.css'],
+  providers: [interactoTreeUndoProviders()]
 })
 export class AppComponent implements AfterViewInit {
   @ViewChild('editor')
   private editor: ElementRef<HTMLDivElement>;
 
-  // private editorView: EditorView;
+  private debouncer: NodeJS.Timeout | undefined;
+
+  private editorView: EditorView;
 
   protected content: string =
 `expofrt class Foo {
   privadte foo: string = "yolo";
 
   constructor() {
-    idf(this.foo ==!= "bar") {
+    idf(this.foo !== "bar") {
       console.log("coucou");
     }
   }
 }`;
 
-  public constructor() {
+  public constructor(private history: TreeUndoHistory) {
   }
 
   public ngAfterViewInit(): void {
@@ -68,13 +74,35 @@ export class AppComponent implements AfterViewInit {
       }
     }
 
+    let latestChangesets: ChangeSet | undefined = undefined;
+    let latestChangesets2: Array<Transaction> = [];
+
     const listenChangesExtension = StateField.define({
-      // we won't use the actual StateField value, null or undefined is fine
       create: () => null,
-      update: (value, transaction) => {
-        if (transaction.docChanged) {
-          // console.log(transaction.newDoc.toJSON());
-          console.log(transaction.changes.toJSON());
+      update: (_value, transaction: Transaction) => {
+        // https://codemirror.net/docs/ref/#state.Transaction^userEvent
+        if (transaction.docChanged && !transaction.isUserEvent("none")) {
+          if (this.debouncer !== undefined) {
+            clearTimeout(this.debouncer);
+          }
+
+          if (latestChangesets === undefined) {
+            latestChangesets = transaction.changes;
+            latestChangesets2.push(transaction);
+          } else {
+            latestChangesets = latestChangesets.compose(transaction.changes);
+            latestChangesets2.push(transaction);
+          }
+
+          this.debouncer = setTimeout(() => {
+            if(latestChangesets !== undefined) {
+              const cmd = new CodeChanged(latestChangesets2, this.editorView);
+              cmd.done();
+              this.history.add(cmd);
+              latestChangesets = undefined;
+              latestChangesets2 = [];
+            }
+          }, 1000);
         }
         return null;
       },
@@ -84,17 +112,15 @@ export class AppComponent implements AfterViewInit {
       console.error(err);
     });
 
-    // this.editorView =
-    new EditorView({
+    this.editorView = new EditorView({
       parent: this.editor.nativeElement,
-      // dispatch: this.dispatchChange,
       state: EditorState.create({
         doc: this.content,
         extensions: [
           lineNumbers(),
           highlightActiveLineGutter(),
           highlightSpecialChars(),
-          // history(),
+          //history(),
           foldGutter(),
           drawSelection(),
           dropCursor(),
