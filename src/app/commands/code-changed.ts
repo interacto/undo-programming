@@ -55,6 +55,7 @@ export class CodeChanged extends UndoableCommand {
             let txt = part.value;
             const span = document.createElement('span');
             span.style.color = part.added ? 'green' : part.removed ? 'red' : 'black';
+            span.style.textDecoration = part.added ? 'underline' : part.removed ? 'line-through' : '';
 
             if(part.added || part.removed) {
                 lastPartHadChange = true;
