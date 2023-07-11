@@ -153,30 +153,24 @@ export class AppComponent implements AfterViewInit {
           lintGutter(),
           // linter(esLint(new Linter(), config)),
           themeExt,
-          // EditorView.domEventHandlers({
-          //   change(_event, _view) {
-          //     console.log("yolo");
-          //   },
-          // })
-          // EditorView.updateListener.of(update => this.viewUpdate(update)),
           listenChangesExtension
         ]
       })
     });
   }
 
-  public simpleLezerLinter(): Extension {
-    return linter(view => {
-      const {state} = view;
-      const tree = syntaxTree(state);
+  // public simpleLezerLinter(): Extension {
+  //   return linter(view => {
+  //     const {state} = view;
+  //     const tree = syntaxTree(state);
 
-      tree.iterate({enter: n => {
-        console.log(n.name, n.type.isError, n.type, n.node);
-      }});
+  //     tree.iterate({enter: n => {
+  //       console.log(n.name, n.type.isError, n.type, n.node);
+  //     }});
 
-      return []
-    });
-  }
+  //     return []
+  //   });
+  // }
 
   public syntaxLinter(): Extension {
     return linter(view => {
@@ -201,18 +195,4 @@ export class AppComponent implements AfterViewInit {
       return acc;
     });
   }
-
-  // public dispatchChange(_tr: Transaction): void {
-  //   console.log("change:", _tr);
-  // }
-
-  public viewUpdate(up: ViewUpdate): void {
-    if(up.docChanged) {
-      console.log("update:", up);
-    }
-  }
-
-  // public changeListener(evt: Event): void {
-  //   console.log("change:", evt);
-  // }
 }

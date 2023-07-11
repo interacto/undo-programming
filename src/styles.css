@@ -22,3 +22,7 @@
     width: 100% o !important;
     position: relative !important;
 }
+
+.current-node {
+    background-color: rgb(233, 233, 233) !important;
+}

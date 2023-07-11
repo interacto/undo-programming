@@ -1,13 +1,17 @@
 import { Transaction } from "@codemirror/state";
 import { EditorView } from "codemirror";
 import { UndoableCommand } from "interacto";
+import { Diff } from "diff";
 
 export class CodeChanged extends UndoableCommand {
+    private cacheSnapshot: HTMLElement | undefined;
+
     public constructor(
         private transactions: Transaction[],
         private editorView: EditorView
     ) {
         super();
+        this.cacheSnapshot = undefined;
     }
 
     override redo(): void {
@@ -35,7 +39,53 @@ export class CodeChanged extends UndoableCommand {
         this.redo();
     }
 
-    public override getVisualSnapshot(): string {
-        return "changed";
+    public override getVisualSnapshot(): HTMLElement {
+        return this.cacheSnapshot ?? this.createHtmlSnapshot();
+    }
+
+    private createHtmlSnapshot(): HTMLElement {
+        const diff = new Diff().diff(this.transactions.at(0)?.startState.doc.toString()!, this.transactions.at(-1)?.state.doc.toString()!);
+        const div = document.createElement('div');
+        div.style.fontFamily = "Fira Code";
+        div.style.fontSize = "small";
+
+        let lastPartHadChange = false;
+
+        diff.forEach((part, i) => {
+            let txt = part.value;
+            const span = document.createElement('span');
+            span.style.color = part.added ? 'green' : part.removed ? 'red' : 'black';
+
+            if(part.added || part.removed) {
+                lastPartHadChange = true;
+            }else {
+                const split = this.splitTxtBreakLine(txt);
+
+                if(lastPartHadChange) {
+                    const next = diff.at(i+1);
+
+                    if(next != undefined && (next.added || next.removed)) {
+                        if(split.length > 2) {
+                            txt = `${split.at(0)!} ... ${split.at(-1)!}`;
+                        }
+                    }else {
+                        txt = split.at(0)!;
+                    }
+                }else {
+                    txt = split.at(-1)!;
+                }
+                lastPartHadChange = false;
+            }
+
+            span.appendChild(document.createTextNode(txt));
+            div.appendChild(span);
+          });
+
+        this.cacheSnapshot = div;
+        return this.cacheSnapshot;
+    }
+
+    private splitTxtBreakLine(txt: string): ReadonlyArray<string> {
+        return txt.split(/\r?\n|\r|\n/g);
     }
 }
