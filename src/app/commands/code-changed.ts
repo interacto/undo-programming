@@ -67,7 +67,7 @@ export class CodeChanged extends UndoableCommand {
 
                     if(next != undefined && (next.added || next.removed)) {
                         if(split.length > 2) {
-                            txt = `${split.at(0)!} ... ${split.at(-1)!}`;
+                            txt = `${split.at(0)} ... ${split.at(-1)}`;
                         }
                     }else {
                         txt = split.at(0)!;

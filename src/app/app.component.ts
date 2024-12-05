@@ -2,14 +2,15 @@ import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
 import { defaultKeymap, indentWithTab } from '@codemirror/commands';
 import { javascript } from '@codemirror/lang-javascript';
-import { bracketMatching, defaultHighlightStyle, foldGutter, foldKeymap, indentOnInput, syntaxHighlighting, syntaxTree } from '@codemirror/language';
+import { bracketMatching, defaultHighlightStyle, ensureSyntaxTree, foldGutter, foldKeymap, indentOnInput, syntaxHighlighting, syntaxTree } from '@codemirror/language';
 import { Diagnostic, lintGutter, lintKeymap, linter } from '@codemirror/lint';
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
-import { ChangeSet, EditorState, Extension, StateField, Transaction } from '@codemirror/state';
-import { EditorView, ViewUpdate, crosshairCursor, drawSelection, dropCursor, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, keymap, lineNumbers, rectangularSelection } from '@codemirror/view';
-import { TreeUndoHistory, UndoHistory } from 'interacto';
-import { CodeChanged } from './commands/code-changed';
+import { EditorState, Extension, StateField, Transaction } from '@codemirror/state';
+import { EditorView, crosshairCursor, drawSelection, dropCursor, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, keymap, lineNumbers, rectangularSelection } from '@codemirror/view';
+import { TreeUndoHistory } from 'interacto';
 import { interactoTreeUndoProviders } from 'interacto-angular';
+import { CodeChanged } from './commands/code-changed';
+// import { java } from '@codemirror/lang-java';
 
 const theme = EditorView.theme(
   {
@@ -53,29 +54,29 @@ export class AppComponent implements AfterViewInit {
 
   private editorView: EditorView;
 
-  protected content: string =
-`expofrt class Foo {
-  privadte foo: string = "yolo";
+  // private readonly log: LogEvent = new LogEvent();
 
-  constructor() {
-    idf(this.foo !== "bar") {
-      console.log("coucou");
-    }
-  }
+  protected content: string =
+`
+// TypeScript code
+class Foo {
 }`;
 
   public constructor(private history: TreeUndoHistory) {
   }
 
   public ngAfterViewInit(): void {
+    // this.log.register(window.document);
+
     window.document.onkeydown = function(e) {
       if (e.ctrlKey && e.key === 'z') {
         e.preventDefault();
       }
     }
 
-    let latestChangesets: ChangeSet | undefined = undefined;
-    let latestChangesets2: Array<Transaction> = [];
+    let latestChangesets: Array<Transaction> = [];
+
+
 
     const listenChangesExtension = StateField.define({
       create: () => null,
@@ -86,23 +87,29 @@ export class AppComponent implements AfterViewInit {
             clearTimeout(this.debouncer);
           }
 
-          if (latestChangesets === undefined) {
-            latestChangesets = transaction.changes;
-            latestChangesets2.push(transaction);
+          if (latestChangesets.length === 0) {
+            latestChangesets.push(transaction);
           } else {
-            latestChangesets = latestChangesets.compose(transaction.changes);
-            latestChangesets2.push(transaction);
+            latestChangesets.push(transaction);
           }
 
           this.debouncer = setTimeout(() => {
-            if(latestChangesets !== undefined) {
-              const cmd = new CodeChanged(latestChangesets2, this.editorView);
+            if(latestChangesets.length > 0) {
+              const tree = ensureSyntaxTree(transaction.startState, transaction.startState.doc.length, 5000)?.cursorAt(0);
+              latestChangesets.map(cs => {
+              })
+              tree?.iterate(node => {
+                console.dir(node.node);
+              }
+              );
+
+
+              const cmd = new CodeChanged(latestChangesets, this.editorView);
               cmd.done();
               this.history.add(cmd);
-              latestChangesets = undefined;
-              latestChangesets2 = [];
+              latestChangesets = [];
             }
-          }, 1000);
+          }, 2000);
         }
         return null;
       },
@@ -148,6 +155,7 @@ export class AppComponent implements AfterViewInit {
           javascript({
             typescript: true
           }),
+          // java(),
           this.syntaxLinter(),
           // this.simpleLezerLinter(),
           lintGutter(),
