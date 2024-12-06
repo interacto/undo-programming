@@ -5,9 +5,10 @@ import { AppModule } from './app/app.module';
 // import 'codemirror/mode/clike/clike';
 // import 'codemirror/mode/javascript/javascript';
 
-import * as wasm from './assets/hyperast_wasm';
+import * as hyper from './assets/hyperast/hyperast_wasm';
 
-wasm.greet('bar');
+hyper.greet('bar');
+
 
 // import('./assets/foo')
 //   .then(res => {
